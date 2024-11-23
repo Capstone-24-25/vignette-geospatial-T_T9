@@ -1,6 +1,17 @@
 # The impact of population density on travel patterns
 ### 研究人口密度如何影响交通方式选择，比较高密度和低密度区域的步行、骑行与驾车模式的差异。
 
+3. 人口密度对出行模式的影响
+目标： 研究人口密度（hh_bgDensity.csv）如何影响交通方式选择。
+数据使用：
+人口密度数据：hh_bgDensity.csv。
+出行方式数据：Walk_trips, Bike_trips, DriveAlone_trips。
+方法：
+构建空间回归模型（如地理加权回归，GWR）。
+比较高密度和低密度区域的出行模式选择差异。
+结果： 显示高密度地区更多选择步行/骑行，低密度地区更多选择驾车。
+
+
 #### 1. 加载数据
 ```{r}
 # 加载必要的包
