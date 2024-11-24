@@ -3,11 +3,9 @@
 Analyze how population density influences different travel modes (e.g., walking, biking, driving) across regions using Geographically Weighted Regression (GWR).
 
 
-
 Data Sources:
 Population Density Data: From hh_bgDensity.csv, includes population density by region.
 Travel Mode Data: From the main dataset, including variables like Walk_trips, Bike_trips, and DriveAlone_trips.
-
 
 Overview: Population Density's Impact on Travel Modes
 Goal:
@@ -28,26 +26,70 @@ Compare travel mode preferences (e.g., average walking or driving trips) between
 
 #### load data
 ```{r}
-# Load required packages
-library(sf)        # For spatial data handling
-library(dplyr)     # For data manipulation
-library(GWmodel)   # For geographically weighted regression
-library(ggplot2)   # For visualization
+library(sf)      
+library(dplyr)
+library(GWmodel)
+library(ggplot2)
+library(mapview)
+library(leafpop)
 
-# load data
-person_data <- readRDS("Data/PersonData_111A.Rds")
-hh_data <- readRDS("Data/HHData_111A.Rds")
-bg_density <- eadRDS("Data/hh_bgDensity.Rds")
+person_data <- readRDS("../Data/PersonData.Rds")
+hh_data <- readRDS("../Data/HHData.Rds")
+bg_density <- readRDS("../Data/hh_bgDensity.Rds")
+shapefile <- st_read("../Data/counties/counties.shp")
 
-# Inspect data structure
 head(person_data)
 head(hh_data)
 head(bg_density)
+head(shapefile)
+```
+
+#### 3. Merge All Data
+
+```{r}
+# Merge data
+combine_data <- left_join(person_data, hh_data) %>% left_join(bg_density)
+head(combine_data)
+```
+
+
+9. A table showing the average distance traveled by each of the following modes: Drive Alone, Passenger, and Walking on each day of the week for people with disability. (5 points)
+```{r}
+summarized_data <- combine_data %>%
+  select(hhid, pnum, DriveAlone_Dist, Driveothers_Dist, Passenger_Dist, Walk_Dist, CTFIP) %>%
+  group_by(CTFIP) %>%
+  summarise(
+    avg_DriveAlone_Dist = mean(DriveAlone_Dist, na.rm = TRUE),
+    avg_Driveothers_Dist = mean(Driveothers_Dist, na.rm = TRUE),
+    avg_Passenger_Dist = mean(Passenger_Dist, na.rm = TRUE),
+    avg_Walk_Dist = mean(Walk_Dist, na.rm = TRUE)
+  )
+```
+
+
+Plot
+```{r}
+shapefile_with_avg <- shapefile %>%
+  left_join(summarized_data, by = "CTFIP")
+
+mapviewOptions(fgb = F)
+
+mapview(shapefile_with_avg, 
+        zcol = "avg_DriveAlone_Dist", 
+        legend = TRUE,
+        label = as.character(shapefile_with_avg$CTFIP),  
+        popup = popupTable(shapefile_with_avg, 
+                           zcol = c("avg_DriveAlone_Dist", "avg_Driveothers_Dist", 
+                                    "avg_Passenger_Dist", "avg_Walk_Dist")))
 
 ```
+
+----- not used yet
+
 #### Ensure
 - `hh_data` contains travel mode data: `Walk_trips`, `Bike_trips`, `DriveAlone_trips`.
 - `bg_density` includes `region_id`, `population_density`, and geographic coordinates (`longitude`, `latitude`).
+
 
 
 #### 2.Aggregate Regional Travel Data
@@ -62,20 +104,9 @@ trip_summary <- hh_data %>%
     mean_drive_trips = mean(DriveAlone_trips, na.rm = TRUE)
   )
 
-
 ```
 
-#### 3. Merge Population Density Data
-Combine `trip_summary` with `bg_density` to include travel modes and population density for each region.
-```{r}
-# Merge travel mode and population density data
-density_data <- bg_density %>%
-  left_join(trip_summary, by = "region_id")
 
-# Inspect merged data
-head(density_data)
-
-```
 
 #### 4. Prepare Spatial Data
 Convert the combined dataset into a spatial object for GWR analysis using sf.
