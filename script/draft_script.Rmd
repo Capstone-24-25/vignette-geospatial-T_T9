@@ -81,7 +81,6 @@ mapview(shapefile_with_avg,
         popup = popupTable(shapefile_with_avg, 
                            zcol = c("avg_DriveAlone_Dist", "avg_Driveothers_Dist", 
                                     "avg_Passenger_Dist", "avg_Walk_Dist")))
-
 ```
 
 ----- not used yet
