@@ -1,5 +1,8 @@
-# The impact of population density on travel patterns
-### 研究人口密度如何影响交通方式选择，比较高密度和低密度区域的步行、骑行与驾车模式的差异。
+# Capturing Spatial Variation of Population Density and Travel Modes Using GWR
+## Goal 
+Analyze how population density influences different travel modes (e.g., walking, biking, driving) across regions using Geographically Weighted Regression (GWR).
+
+
 
 3. 人口密度对出行模式的影响
 目标： 研究人口密度（hh_bgDensity.csv）如何影响交通方式选择。
@@ -14,25 +17,32 @@
 
 #### load data
 ```{r}
-# load packages
-library(sf)
-library(dplyr)
-library(ggplot2)
-library(GWmodel)
+# Load required packages
+library(sf)        # For spatial data handling
+library(dplyr)     # For data manipulation
+library(GWmodel)   # For geographically weighted regression
+library(ggplot2)   # For visualization
 
-# read data
-hh_data <- read.csv("HHData_111A.csv")
-bg_density <- read.csv("hh_bgDensity.csv")
+# load data
+person_data <- readRDS("Data/PersonData_111A.Rds")
+hh_data <- readRDS("Data/HHData_111A.Rds")
+bg_density <- eadRDS("Data/hh_bgDensity.Rds")
 
-# 
+# Inspect data structure
+head(person_data)
 head(hh_data)
 head(bg_density)
 
 ```
+#### Ensure
+- `hh_data` contains travel mode data: `Walk_trips`, `Bike_trips`, `DriveAlone_trips`.
+- `bg_density` includes `region_id`, `population_density`, and geographic coordinates (`longitude`, `latitude`).
 
-#### 2. 汇总区域数据
+
+#### 2.Aggregate Regional Travel Data
+Group data by `region_id` and calculate the mean travel mode statistics.
 ```{r}
-# Walk_trips, Bike_trips, DriveAlone_trips
+# Summarize travel modes by region
 trip_summary <- hh_data %>%
   group_by(region_id) %>%
   summarise(
@@ -41,65 +51,116 @@ trip_summary <- hh_data %>%
     mean_drive_trips = mean(DriveAlone_trips, na.rm = TRUE)
   )
 
+
 ```
 
-#### combine data
+#### 3. Merge Population Density Data
+Combine `trip_summary` with `bg_density` to include travel modes and population density for each region.
 ```{r}
-# 
+# Merge travel mode and population density data
 density_data <- bg_density %>%
   left_join(trip_summary, by = "region_id")
 
+# Inspect merged data
+head(density_data)
+
 ```
 
-#### GWR
+#### 4. Prepare Spatial Data
+Convert the combined dataset into a spatial object for GWR analysis using sf.
 ```{r}
-# prep spatial data
-spatial_data <- st_as_sf(density_data, coords = c("longitude", "latitude"), crs = 4326)
-
-# GWR data
-gwr_data <- gwr.basic(
-  formula = mean_walk_trips ~ population_density,
-  data = spatial_data,
-  bw = 100
+# Convert to spatial data (sf object)
+spatial_data <- st_as_sf(
+  density_data,
+  coords = c("longitude", "latitude"),  # Replace with actual column names for coordinates
+  crs = 4326  # Use WGS 84 coordinate reference system
 )
 
-summary(gwr_data)
+# View spatial data summary
+print(spatial_data)
+
 
 ```
 
-#### visualization
-```{r}
-# GWR visualization
-gwr_coeff <- as.data.frame(gwr_data$SDF)
+#### 5. Select GWR Bandwidth
+Use `bw.gwr()` to find the optimal bandwidth for GWR analysis.
 
+```{r}
+# Determine optimal bandwidth for walking trips
+bw_walk <- bw.gwr(mean_walk_trips ~ population_density, data = spatial_data, adaptive = TRUE)
+print(bw_walk)
+
+
+```
+
+#### 6. Perform Geographically Weighted Regression
+Run the GWR model for walking trips as an example. Repeat for other travel modes if needed.
+```{r}
+# GWR model for walking trips
+gwr_result <- gwr.basic(
+  formula = mean_walk_trips ~ population_density,
+  data = spatial_data,
+  bw = bw_walk,  # Use the selected bandwidth
+  adaptive = TRUE  # Enable adaptive bandwidth
+)
+
+# View GWR summary
+summary(gwr_result)
+
+
+```
+
+
+#### 7. Extract and Visualize GWR Coefficients
+Extract coefficients from the GWR results and add them to the spatial dataset. Create a heatmap to visualize the influence of population density on walking trips.
+```{r}
+# Add GWR coefficients to spatial data
+spatial_data$gwr_coeff_walk <- gwr_result$SDF$population_density
+
+# Plot GWR coefficients
 ggplot(spatial_data) +
-  geom_sf(aes(fill = gwr_coeff$population_density)) +
+  geom_sf(aes(fill = gwr_coeff_walk)) +
   scale_fill_viridis_c(option = "plasma") +
   labs(
-    title = "GWR Coefficients for Population Density",
-    fill = "Impact on Walking Trips"
+    title = "GWR Coefficients for Population Density (Walking Trips)",
+    fill = "Coefficient"
   ) +
   theme_minimal()
 
 ```
 
-#### 
+#### 8. Compare High-Density and Low-Density Regions
+Divide regions into high-density and low-density groups based on the median population density, then compare travel modes.
 ```{r}
-# Grouping
+# Categorize regions into high-density and low-density groups
 density_data <- density_data %>%
   mutate(density_group = ifelse(population_density > median(population_density), "High Density", "Low Density"))
 
-# 
-density_data %>%
+# Summarize average travel modes by density group
+group_summary <- density_data %>%
   group_by(density_group) %>%
   summarise(
-    avg_walk_trips = mean(mean_walk_trips),
-    avg_bike_trips = mean(mean_bike_trips),
-    avg_drive_trips = mean(mean_drive_trips)
+    avg_walk_trips = mean(mean_walk_trips, na.rm = TRUE),
+    avg_bike_trips = mean(mean_bike_trips, na.rm = TRUE),
+    avg_drive_trips = mean(mean_drive_trips, na.rm = TRUE)
   )
 
-```
+print(group_summary)
 
-#### Results
-if high density area rely more on walking/biking.
-if low density rely more on driving.
+```
+#### 9. Interpret Results
+
+- **GWR Coefficients:** The heatmap shows how the relationship between population density and walking trips varies spatially. High coefficients indicate regions where population density has a stronger impact on walking.
+- **High-Density vs Low-Density Regions:**
+  - High-density regions are likely to favor walking and biking.
+  - Low-density regions may rely more on driving.
+
+
+### **Extensions**
+
+1. **Additional Predictors:**
+   - Include other urbanization proxies like `housing_density` or `median_income`.
+2. **Time-Based Analysis:**
+   - If time data is available, analyze how population density influences travel modes during different periods (e.g., weekdays vs weekends).
+3. **Other Visualization Options:**
+   - Combine travel modes into a single visualization, using distinct colors for walking, biking, and driving preferences.
