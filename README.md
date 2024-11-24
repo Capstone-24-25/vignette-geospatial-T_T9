@@ -1,17 +1,21 @@
-Vignette on implementing distribution-based clustering using cell type data; created as a class project for PSTAT197A in Fall 2023.
+**Vignette on geographically weighted regression (GWR) using California travelling and population density data; created as a class project for PSTAT197A in Fall 2024.**
 
 # Contributors
 
-**Sophie Shi, Jiahui He, Xiaofeng Cai, Jiajia Feng, Liuqian Bao**
+Sophie Shi, Jiahui He, Xiaofeng Cai, Jiajia Feng, Liuqian Bao
 
 # Vignette abstract
 
-a brief description in a few sentences of your vignette topic, example data, and outcomes.
+The goal of the vignette is analyze how population density influences travel mode choices, such as walking, biking, and driving alone, using travelling and population density data of counties in California. (Data source: ) We demonstrated how to use Geographically Weighted Regression (GWR) to explore the spatial variation in the relationship between population density and travel mode choices. Determine how the impact of population density on travel modes varies across regions.
 
 # Repository contents
 
-an explanation of the directory structure of the repository
+-data
 
-# Reference list 
+-script
+
+-img
+
+# Reference list
 
 2 or more references to learn more about your topic.
