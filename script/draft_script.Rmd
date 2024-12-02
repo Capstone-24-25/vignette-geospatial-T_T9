@@ -1,3 +1,17 @@
+# Spatial Analysis of Travel Distances Across Different Modes Using Geographically Weighted Regression (GWR)
+
+## Goal 
+The goal is to understand how travel behavior (e.g., distances traveled for different modes of transportation) varies across different counties through a spatial regression analysis 
+
+## Data Sources
+xxx
+
+## Methodology
+Spatial Regression Analysis:
+Use Geographically Weighted Regression (GWR) to explore the spatial variation 
+Determine how the impact
+
+### Data Pre-Processing
 ```{r}
 library(sf) 
 library(sp)
