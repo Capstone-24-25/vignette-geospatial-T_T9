@@ -1,0 +1,165 @@
+# Spatial Analysis of Travel Distances Across Different Modes Using Geographically Weighted Regression (GWR)
+
+## Goal 
+The goal is to understand how travel behavior (e.g., distances traveled for different modes of transportation) varies across different counties through a spatial regression analysis 
+
+## Data Sources
+xxx
+
+## Methodology
+Spatial Regression Analysis:
+Use Geographically Weighted Regression (GWR) to explore the spatial variation 
+Determine how the impact
+
+### Data Pre-Processing
+```{r}
+library(sf) 
+library(sp)
+library(dplyr)
+library(GWmodel)
+library(ggplot2)
+library(mapview)
+library(leafpop)
+
+person_data <- readRDS("../Data/PersonData.Rds")
+hh_data <- readRDS("../Data/HHData.Rds")
+bg_density <- readRDS("../Data/hh_bgDensity.Rds")
+shapefile <- st_read("../Data/counties/counties.shp")
+
+head(person_data)
+head(hh_data)
+head(bg_density)
+head(shapefile)
+```
+
+
+```{r}
+# Merge Data
+combine_data <- left_join(person_data, hh_data) %>% left_join(bg_density)
+head(combine_data)
+```
+
+
+Group the data by county (CTFIP), and calculates the average total number of miles traveled by a person for each travel mode (Drive Alone, Drive with Others, Passenger, Walk, and Total) on the survey day.
+```{r}
+summarized_data <- combine_data %>%
+  select(hhid, pnum, DriveAlone_Dist, Driveothers_Dist, Passenger_Dist, Walk_Dist, Bike_Dist, CTFIP, Sum_PMT) %>%
+  group_by(CTFIP) %>%
+  summarise(
+    avg_DriveAlone_Dist = mean(DriveAlone_Dist, na.rm = T),
+    avg_Driveothers_Dist = mean(Driveothers_Dist, na.rm = T),
+    avg_Passenger_Dist = mean(Passenger_Dist, na.rm = T),
+    avg_Walk_Dist = mean(Walk_Dist, na.rm = T),
+    avg_Bike_Dist = mean(Bike_Dist, na.rm = T),
+    avg_Sum_Pmt = mean(Sum_PMT, na.rm = T))
+```
+
+
+Plot
+```{r}
+shapefile_sum <- shapefile %>%
+  left_join(summarized_data, by = "CTFIP")
+
+mapviewOptions(fgb = F)
+
+mapview(shapefile_sum, 
+        zcol = "avg_Sum_Pmt", # assigned color based on sum distance
+        legend = TRUE,
+        label = as.character(shapefile_sum$CTFIP),  
+        popup = popupTable(shapefile_sum, 
+                           zcol = c("avg_DriveAlone_Dist", 
+                                    "avg_Driveothers_Dist", 
+                                    "avg_Passenger_Dist", 
+                                    "avg_Walk_Dist", 
+                                    "avg_Bike_Dist",
+                                    "avg_Sum_Pmt")))
+```
+
+
+#### Select GWR Bandwidth
+Use `bw.gwr()` to find the optimal bandwidth for GWR analysis.
+
+```{r}
+coords <- st_coordinates(st_centroid(st_geometry(shapefile_sum)))
+
+gwr_data <- shapefile_sum %>%
+  select(avg_DriveAlone_Dist, avg_Driveothers_Dist, avg_Passenger_Dist, avg_Walk_Dist, avg_Bike_Dist, avg_Sum_Pmt) %>%
+  st_drop_geometry()
+
+gwr_data <- cbind(gwr_data, coords)
+
+gwr_formula <- avg_Sum_Pmt ~ avg_DriveAlone_Dist + avg_Driveothers_Dist + avg_Passenger_Dist + avg_Walk_Dist + avg_Bike_Dist
+
+# convert to spatial data
+coordinates(gwr_data) <- ~X + Y
+proj4string(gwr_data) <- CRS("+proj=longlat +datum=WGS84")
+
+# Perform bandwidth selection for GWR
+bw <- bw.gwr(
+  formula = gwr_formula,
+  data = gwr_data,  
+  adaptive = T)
+```
+
+#### Perform Geographically Weighted Regression
+
+```{r}
+gwr_model <- gwr.basic(
+  formula = gwr_formula,
+  data = gwr_data,
+  bw = bw, 
+  adaptive = T)
+
+gwr_result <- gwr_model$SDF
+summary(gwr_result)
+head(gwr_result)
+
+gwr_sf <- st_as_sf(gwr_result)
+```
+
+```{r}
+ggplot(data = gwr_sf) +
+  geom_sf(aes(color = avg_DriveAlone_Dist)) + 
+  scale_color_viridis_c() +  
+  theme_minimal() +
+  labs(title = "Spatial Variation of avg_DriveAlone_Dist Coefficient", 
+       color = "Coefficient Value")
+```
+
+```{r}
+ggplot(data = gwr_sf) +
+  geom_sf(aes(color = avg_Driveothers_Dist)) +  
+  scale_color_viridis_c() +  
+  theme_minimal() +
+  labs(title = "Spatial Variation of avg_Driveothers_Dist Coefficient", 
+       color = "Coefficient Value")
+```
+
+```{r}
+ggplot(data = gwr_sf) +
+  geom_sf(aes(color = avg_Passenger_Dist)) +  
+  scale_color_viridis_c() + 
+  theme_minimal() +
+  labs(title = "Spatial Variation of avg_Passenger_Dist Coefficient", 
+       color = "Coefficient Value")
+```
+
+```{r}
+ggplot(data = gwr_sf) +
+  geom_sf(aes(color = avg_Walk_Dist)) +  
+  scale_color_viridis_c() +  
+  theme_minimal() +
+  labs(title = "Spatial Variation of avg_Walk_Dist Coefficient", 
+       color = "Coefficient Value")
+```
+
+```{r}
+ggplot(data = gwr_sf) +
+  geom_sf(aes(color = avg_Bike_Dist)) +  
+  scale_color_viridis_c() +  
+  theme_minimal() +
+  labs(title = "Spatial Variation of avg_Bike_Dist Coefficient", 
+       color = "Coefficient Value")
+```
+
+interpret coefficient xxxx
