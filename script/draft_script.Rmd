@@ -1,32 +1,20 @@
-# Capturing Spatial Variation of Population Density and Travel Modes Using GWR
+# Spatial Analysis of Travel Distances Across Different Modes Using Geographically Weighted Regression (GWR)
+
 ## Goal 
-Analyze how population density influences different travel modes (e.g., walking, biking, driving) across regions using Geographically Weighted Regression (GWR).
+The goal is to understand how travel behavior (e.g., distances traveled for different modes of transportation) varies across different counties through a spatial regression analysis 
 
+## Data Sources
+xxx
 
-Data Sources:
-Population Density Data: From hh_bgDensity.csv, includes population density by region.
-Travel Mode Data: From the main dataset, including variables like Walk_trips, Bike_trips, and DriveAlone_trips.
-
-Overview: Population Density's Impact on Travel Modes
-Goal:
-To analyze how population density (from hh_bgDensity.csv) influences travel mode choices, such as walking, biking, and driving alone.
-
-Data Sources:
-Population Density Data: From hh_bgDensity.csv, includes population density by region.
-Travel Mode Data: From the main dataset, including variables like Walk_trips, Bike_trips, and DriveAlone_trips.
-
-Methodology:
+## Methodology
 Spatial Regression Analysis:
-Use Geographically Weighted Regression (GWR) to explore the spatial variation in the relationship between population density and travel mode choices.
-Determine how the impact of population density on travel modes varies across regions.
-Group Comparison:
-Divide regions into high-density and low-density groups based on population density.
-Compare travel mode preferences (e.g., average walking or driving trips) between these groups.
+Use Geographically Weighted Regression (GWR) to explore the spatial variation 
+Determine how the impact
 
-
-#### load data
+### Data Pre-Processing
 ```{r}
-library(sf)      
+library(sf) 
+library(sp)
 library(dplyr)
 library(GWmodel)
 library(ggplot2)
@@ -44,164 +32,134 @@ head(bg_density)
 head(shapefile)
 ```
 
-#### 3. Merge All Data
 
 ```{r}
-# Merge data
+# Merge Data
 combine_data <- left_join(person_data, hh_data) %>% left_join(bg_density)
 head(combine_data)
 ```
 
 
-9. A table showing the average distance traveled by each of the following modes: Drive Alone, Passenger, and Walking on each day of the week for people with disability. (5 points)
+Group the data by county (CTFIP), and calculates the average total number of miles traveled by a person for each travel mode (Drive Alone, Drive with Others, Passenger, Walk, and Total) on the survey day.
 ```{r}
 summarized_data <- combine_data %>%
-  select(hhid, pnum, DriveAlone_Dist, Driveothers_Dist, Passenger_Dist, Walk_Dist, CTFIP) %>%
+  select(hhid, pnum, DriveAlone_Dist, Driveothers_Dist, Passenger_Dist, Walk_Dist, Bike_Dist, CTFIP, Sum_PMT) %>%
   group_by(CTFIP) %>%
   summarise(
-    avg_DriveAlone_Dist = mean(DriveAlone_Dist, na.rm = TRUE),
-    avg_Driveothers_Dist = mean(Driveothers_Dist, na.rm = TRUE),
-    avg_Passenger_Dist = mean(Passenger_Dist, na.rm = TRUE),
-    avg_Walk_Dist = mean(Walk_Dist, na.rm = TRUE)
-  )
+    avg_DriveAlone_Dist = mean(DriveAlone_Dist, na.rm = T),
+    avg_Driveothers_Dist = mean(Driveothers_Dist, na.rm = T),
+    avg_Passenger_Dist = mean(Passenger_Dist, na.rm = T),
+    avg_Walk_Dist = mean(Walk_Dist, na.rm = T),
+    avg_Bike_Dist = mean(Bike_Dist, na.rm = T),
+    avg_Sum_Pmt = mean(Sum_PMT, na.rm = T))
 ```
 
 
 Plot
 ```{r}
-shapefile_with_avg <- shapefile %>%
+shapefile_sum <- shapefile %>%
   left_join(summarized_data, by = "CTFIP")
 
 mapviewOptions(fgb = F)
 
-mapview(shapefile_with_avg, 
-        zcol = "avg_DriveAlone_Dist", 
+mapview(shapefile_sum, 
+        zcol = "avg_Sum_Pmt", # assigned color based on sum distance
         legend = TRUE,
-        label = as.character(shapefile_with_avg$CTFIP),  
-        popup = popupTable(shapefile_with_avg, 
-                           zcol = c("avg_DriveAlone_Dist", "avg_Driveothers_Dist", 
-                                    "avg_Passenger_Dist", "avg_Walk_Dist")))
-```
-
------ not used yet
-
-#### Ensure
-- `hh_data` contains travel mode data: `Walk_trips`, `Bike_trips`, `DriveAlone_trips`.
-- `bg_density` includes `region_id`, `population_density`, and geographic coordinates (`longitude`, `latitude`).
-
-
-
-#### 2.Aggregate Regional Travel Data
-Group data by `region_id` and calculate the mean travel mode statistics.
-```{r}
-# Summarize travel modes by region
-trip_summary <- hh_data %>%
-  group_by(region_id) %>%
-  summarise(
-    mean_walk_trips = mean(Walk_trips, na.rm = TRUE),
-    mean_bike_trips = mean(Bike_trips, na.rm = TRUE),
-    mean_drive_trips = mean(DriveAlone_trips, na.rm = TRUE)
-  )
-
+        label = as.character(shapefile_sum$CTFIP),  
+        popup = popupTable(shapefile_sum, 
+                           zcol = c("avg_DriveAlone_Dist", 
+                                    "avg_Driveothers_Dist", 
+                                    "avg_Passenger_Dist", 
+                                    "avg_Walk_Dist", 
+                                    "avg_Bike_Dist",
+                                    "avg_Sum_Pmt")))
 ```
 
 
-
-#### 4. Prepare Spatial Data
-Convert the combined dataset into a spatial object for GWR analysis using sf.
-```{r}
-# Convert to spatial data (sf object)
-spatial_data <- st_as_sf(
-  density_data,
-  coords = c("longitude", "latitude"),  # Replace with actual column names for coordinates
-  crs = 4326  # Use WGS 84 coordinate reference system
-)
-
-# View spatial data summary
-print(spatial_data)
-
-
-```
-
-#### 5. Select GWR Bandwidth
+#### Select GWR Bandwidth
 Use `bw.gwr()` to find the optimal bandwidth for GWR analysis.
 
 ```{r}
-# Determine optimal bandwidth for walking trips
-bw_walk <- bw.gwr(mean_walk_trips ~ population_density, data = spatial_data, adaptive = TRUE)
-print(bw_walk)
+coords <- st_coordinates(st_centroid(st_geometry(shapefile_sum)))
 
+gwr_data <- shapefile_sum %>%
+  select(avg_DriveAlone_Dist, avg_Driveothers_Dist, avg_Passenger_Dist, avg_Walk_Dist, avg_Bike_Dist, avg_Sum_Pmt) %>%
+  st_drop_geometry()
 
+gwr_data <- cbind(gwr_data, coords)
+
+gwr_formula <- avg_Sum_Pmt ~ avg_DriveAlone_Dist + avg_Driveothers_Dist + avg_Passenger_Dist + avg_Walk_Dist + avg_Bike_Dist
+
+# convert to spatial data
+coordinates(gwr_data) <- ~X + Y
+proj4string(gwr_data) <- CRS("+proj=longlat +datum=WGS84")
+
+# Perform bandwidth selection for GWR
+bw <- bw.gwr(
+  formula = gwr_formula,
+  data = gwr_data,  
+  adaptive = T)
 ```
 
-#### 6. Perform Geographically Weighted Regression
-Run the GWR model for walking trips as an example. Repeat for other travel modes if needed.
-```{r}
-# GWR model for walking trips
-gwr_result <- gwr.basic(
-  formula = mean_walk_trips ~ population_density,
-  data = spatial_data,
-  bw = bw_walk,  # Use the selected bandwidth
-  adaptive = TRUE  # Enable adaptive bandwidth
-)
+#### Perform Geographically Weighted Regression
 
-# View GWR summary
+```{r}
+gwr_model <- gwr.basic(
+  formula = gwr_formula,
+  data = gwr_data,
+  bw = bw, 
+  adaptive = T)
+
+gwr_result <- gwr_model$SDF
 summary(gwr_result)
+head(gwr_result)
 
-
+gwr_sf <- st_as_sf(gwr_result)
 ```
 
-
-#### 7. Extract and Visualize GWR Coefficients
-Extract coefficients from the GWR results and add them to the spatial dataset. Create a heatmap to visualize the influence of population density on walking trips.
 ```{r}
-# Add GWR coefficients to spatial data
-spatial_data$gwr_coeff_walk <- gwr_result$SDF$population_density
-
-# Plot GWR coefficients
-ggplot(spatial_data) +
-  geom_sf(aes(fill = gwr_coeff_walk)) +
-  scale_fill_viridis_c(option = "plasma") +
-  labs(
-    title = "GWR Coefficients for Population Density (Walking Trips)",
-    fill = "Coefficient"
-  ) +
-  theme_minimal()
-
+ggplot(data = gwr_sf) +
+  geom_sf(aes(color = avg_DriveAlone_Dist)) + 
+  scale_color_viridis_c() +  
+  theme_minimal() +
+  labs(title = "Spatial Variation of avg_DriveAlone_Dist Coefficient", 
+       color = "Coefficient Value")
 ```
 
-#### 8. Compare High-Density and Low-Density Regions
-Divide regions into high-density and low-density groups based on the median population density, then compare travel modes.
 ```{r}
-# Categorize regions into high-density and low-density groups
-density_data <- density_data %>%
-  mutate(density_group = ifelse(population_density > median(population_density), "High Density", "Low Density"))
-
-# Summarize average travel modes by density group
-group_summary <- density_data %>%
-  group_by(density_group) %>%
-  summarise(
-    avg_walk_trips = mean(mean_walk_trips, na.rm = TRUE),
-    avg_bike_trips = mean(mean_bike_trips, na.rm = TRUE),
-    avg_drive_trips = mean(mean_drive_trips, na.rm = TRUE)
-  )
-
-print(group_summary)
-
+ggplot(data = gwr_sf) +
+  geom_sf(aes(color = avg_Driveothers_Dist)) +  
+  scale_color_viridis_c() +  
+  theme_minimal() +
+  labs(title = "Spatial Variation of avg_Driveothers_Dist Coefficient", 
+       color = "Coefficient Value")
 ```
-#### 9. Interpret Results
 
-- **GWR Coefficients:** The heatmap shows how the relationship between population density and walking trips varies spatially. High coefficients indicate regions where population density has a stronger impact on walking.
-- **High-Density vs Low-Density Regions:**
-  - High-density regions are likely to favor walking and biking.
-  - Low-density regions may rely more on driving.
+```{r}
+ggplot(data = gwr_sf) +
+  geom_sf(aes(color = avg_Passenger_Dist)) +  
+  scale_color_viridis_c() + 
+  theme_minimal() +
+  labs(title = "Spatial Variation of avg_Passenger_Dist Coefficient", 
+       color = "Coefficient Value")
+```
 
+```{r}
+ggplot(data = gwr_sf) +
+  geom_sf(aes(color = avg_Walk_Dist)) +  
+  scale_color_viridis_c() +  
+  theme_minimal() +
+  labs(title = "Spatial Variation of avg_Walk_Dist Coefficient", 
+       color = "Coefficient Value")
+```
 
-### **Extensions**
+```{r}
+ggplot(data = gwr_sf) +
+  geom_sf(aes(color = avg_Bike_Dist)) +  
+  scale_color_viridis_c() +  
+  theme_minimal() +
+  labs(title = "Spatial Variation of avg_Bike_Dist Coefficient", 
+       color = "Coefficient Value")
+```
 
-1. **Additional Predictors:**
-   - Include other urbanization proxies like `housing_density` or `median_income`.
-2. **Time-Based Analysis:**
-   - If time data is available, analyze how population density influences travel modes during different periods (e.g., weekdays vs weekends).
-3. **Other Visualization Options:**
-   - Combine travel modes into a single visualization, using distinct colors for walking, biking, and driving preferences.
+interpret coefficient xxxx
