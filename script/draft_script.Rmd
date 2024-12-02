@@ -82,14 +82,8 @@ head(combine_data)
     following modes: Drive Alone, Passenger, and Walking on each day of
     the week for people with disability. (5 points)
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 Group the data by county (CTFIP), and calculates the average total number of miles traveled by a person for each travel mode (Drive Alone, Drive with Others, Passenger, Walk, and Total) on the survey day.
-=======
->>>>>>> Stashed changes
-=======
-A table showing the average distance traveled by each of the following modes: Drive Alone, Passenger, and Walking on each day of the week for people with disability.
->>>>>>> Stashed changes
+
 ```{r}
 summarized_data <- combine_data %>%
   select(hhid, pnum, DriveAlone_Dist, Driveothers_Dist, Passenger_Dist, Walk_Dist, Bike_Dist, CTFIP, Sum_PMT) %>%
