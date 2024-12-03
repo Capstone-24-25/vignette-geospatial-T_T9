@@ -25,6 +25,7 @@ person_data <- readRDS("../Data/PersonData.Rds")
 hh_data <- readRDS("../Data/HHData.Rds")
 bg_density <- readRDS("../Data/hh_bgDensity.Rds")
 shapefile <- st_read("../Data/counties/counties.shp")
+boundaries <- st_read("../Data/ca_state_boundaries/CA_State.shp")
 
 head(person_data)
 head(hh_data)
@@ -120,6 +121,7 @@ gwr_sf <- st_as_sf(gwr_result)
 ```{r}
 ggplot(data = gwr_sf) +
   geom_sf(aes(color = avg_DriveAlone_Dist)) + 
+  geom_sf(data = boundaries, fill = NA, color = "black", linewidth = 0.2) +
   scale_color_viridis_c() +  
   theme_minimal() +
   labs(title = "Spatial Variation of avg_DriveAlone_Dist Coefficient", 
@@ -130,6 +132,7 @@ ggplot(data = gwr_sf) +
 ggplot(data = gwr_sf) +
   geom_sf(aes(color = avg_Driveothers_Dist)) +  
   scale_color_viridis_c() +  
+  geom_sf(data = boundaries, fill = NA, color = "black", linewidth = 0.2) +
   theme_minimal() +
   labs(title = "Spatial Variation of avg_Driveothers_Dist Coefficient", 
        color = "Coefficient Value")
@@ -138,6 +141,7 @@ ggplot(data = gwr_sf) +
 ```{r}
 ggplot(data = gwr_sf) +
   geom_sf(aes(color = avg_Passenger_Dist)) +  
+  geom_sf(data = boundaries, fill = NA, color = "black", linewidth = 0.2) +
   scale_color_viridis_c() + 
   theme_minimal() +
   labs(title = "Spatial Variation of avg_Passenger_Dist Coefficient", 
@@ -147,6 +151,7 @@ ggplot(data = gwr_sf) +
 ```{r}
 ggplot(data = gwr_sf) +
   geom_sf(aes(color = avg_Walk_Dist)) +  
+  geom_sf(data = boundaries, fill = NA, color = "black", linewidth = 0.2) +
   scale_color_viridis_c() +  
   theme_minimal() +
   labs(title = "Spatial Variation of avg_Walk_Dist Coefficient", 
@@ -156,6 +161,7 @@ ggplot(data = gwr_sf) +
 ```{r}
 ggplot(data = gwr_sf) +
   geom_sf(aes(color = avg_Bike_Dist)) +  
+  geom_sf(data = boundaries, fill = NA, color = "black", linewidth = 0.2) +
   scale_color_viridis_c() +  
   theme_minimal() +
   labs(title = "Spatial Variation of avg_Bike_Dist Coefficient", 
