@@ -18,4 +18,6 @@ The goal of the vignette is analyze how population density influences travel mod
 
 # Reference list
 
-2 or more references to learn more about your topic.
+https://catalog.data.gov/dataset/ca-geographic-boundaries
+https://nhts.dot.ca.gov/
+
