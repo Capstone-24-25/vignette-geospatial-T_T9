@@ -72,3 +72,52 @@ bw <- bw.gwr(
   data = gwr_data,  
   adaptive = T)
 
+# Perform Geographically Weighted Regression
+
+gwr_model <- gwr.basic(
+  formula = gwr_formula,
+  data = gwr_data,
+  bw = bw, 
+  adaptive = T)
+
+gwr_result <- gwr_model$SDF
+summary(gwr_result)
+head(gwr_result)
+
+gwr_sf <- st_as_sf(gwr_result)
+
+ggplot(data = gwr_sf) +
+  geom_sf(aes(color = avg_DriveAlone_Dist)) + 
+  scale_color_viridis_c() +  
+  theme_minimal() +
+  labs(title = "Spatial Variation of avg_DriveAlone_Dist Coefficient", 
+       color = "Coefficient Value")
+
+ggplot(data = gwr_sf) +
+  geom_sf(aes(color = avg_Driveothers_Dist)) +  
+  scale_color_viridis_c() +  
+  theme_minimal() +
+  labs(title = "Spatial Variation of avg_Driveothers_Dist Coefficient", 
+       color = "Coefficient Value")
+
+ggplot(data = gwr_sf) +
+  geom_sf(aes(color = avg_Passenger_Dist)) +  
+  scale_color_viridis_c() + 
+  theme_minimal() +
+  labs(title = "Spatial Variation of avg_Passenger_Dist Coefficient", 
+       color = "Coefficient Value")
+
+ggplot(data = gwr_sf) +
+  geom_sf(aes(color = avg_Walk_Dist)) +  
+  scale_color_viridis_c() +  
+  theme_minimal() +
+  labs(title = "Spatial Variation of avg_Walk_Dist Coefficient", 
+       color = "Coefficient Value")
+
+ggplot(data = gwr_sf) +
+  geom_sf(aes(color = avg_Bike_Dist)) +  
+  scale_color_viridis_c() +  
+  theme_minimal() +
+  labs(title = "Spatial Variation of avg_Bike_Dist Coefficient", 
+       color = "Coefficient Value")
+
