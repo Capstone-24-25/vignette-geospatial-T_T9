@@ -288,3 +288,17 @@ ggplot(data = gwr_sf) +
 **Cycling**: Stronger impacts in northern and central regions.
 
 **Passenger**: Riding as a passenger is relatively consistent across regions.
+
+## Future Study
+
+This is a very simple example of using the geographically weighted regression, where we only use the model to investigate how each travelling mode weight in the total travelling distance across the state of California. Future research could perform more analysis and/or apply to other forms of data:
+
+1.  **Incorporating Additional Variables:** Include expainatory variables such as income, population density, and land-use characteristics to study how they relate to travel models and how the relationships vary geographically.
+
+2.  **Enhancing GWR Adjustments:**
+
+    -   **Bandwidth Optimization:** Experiment with fixed and adaptive bandwidths to determine the best spatial scale for analyzing the data, potentially improving model accuracy.
+
+    -   **Multiscale GWR (MGWR)**: Explore multiscale GWR to account for variables that may operate at different spatial scales, providing more nuanced insights into local and regional variations.
+
+    -   **Kernel Function Selection**: Investigate the impact of different kernel functions (e.g., Gaussian, bisquare) on the model's results to ensure the most appropriate spatial weighting is applied.
