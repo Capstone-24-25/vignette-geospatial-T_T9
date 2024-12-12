@@ -1,7 +1,7 @@
 ---
 title: "vignette-geospatial"
-author: "Liuqian Bao, Xiaofeng Cai, Jiajia Feng, Shi Xue, Jiahui He"
-date: today 
+author: "Liuqian Bao, Xiaofeng Cai, Jiajia Feng, Sophie Shi, Jiahui He"
+date: "`r Sys.Date()`" 
 output: html_document
 ---
 
@@ -31,13 +31,11 @@ In GWR, the regression is performed repeatedly for each location in the dataset,
 
 #### Bandwidth Selection:
 
-The selection of an appropriate bandwidth is a crucial step for GWR model. Bandwidth is a parameter that governs the spatial extent, over which neighboring observations influence the estimation of local parameters. The bandwidth serves as a key filter determining the degree of localization in the analysis.
+The selection of an appropriate bandwidth is a crucial step for the GWR model. Bandwidth is a parameter that governs the spatial extent, over which neighboring observations influence the estimation of local parameters. The bandwidth serves as a key filter determining the degree of localization in the analysis.
 
 A bandwidth that is too narrow may lead to oversensitivity to local variations, potentially capturing noise in the data. On the other hand, too broad bandwidths can result in over smoothed representations , masking subtle spatial patterns. With a proper bandwidth value, we are able to achieve the balance to ensure the GWR model accurately captures the true spatial heterogeneity without being unduly influenced by distant observations.
 
 Adaptive bandwidths offer an effective solution, as they can vary based on the size of each geographical area and that of its neighbors. Thus, the model can select a narrower bandwidth in dense areas, and a larger one for suburban areas. [3]
-
-In our analysis, we determined the optimal bandwidth using the \`**bw.gwr\`** function, which is 35.
 
 [2] Charlton, M., & Fotheringham, A. S. (2009). Geographically weighted regression. [White Paper].
 
@@ -45,9 +43,9 @@ In our analysis, we determined the optimal bandwidth using the \`**bw.gwr\`** fu
 
 ## Data Pre-Processing
 
-### Merging data
+### Load data
 
-```{r warning=FALSE, message = FALSE}
+```{r warning=FALSE, message = FALSE, results='hide'}
 library(sf) 
 library(sp)
 library(dplyr)
@@ -61,12 +59,35 @@ hh_data <- readRDS("./data/HHData.Rds")
 bg_density <- readRDS("./data/hh_bgDensity.Rds")
 shapefile <- st_read("./data/counties/counties.shp")
 boundaries <- st_read("./data/ca_state_boundaries/CA_State.shp")
+```
 
+#### Person dataset includes basic demographics, employment/student status, and travel behavior variables.
+
+```{r}
 head(person_data)
+```
+
+#### Household dataset includes household-level demographics, survey date, and home county.
+
+```{r}
 head(hh_data)
+```
+
+#### Block group density dataset contains how urban are the areas around CHTS respondents' homes.
+
+```{r}
 head(bg_density)
+```
+
+#### Counties file contains the county names and their corresponding latitudes and longitudes.
+
+```{r}
 head(shapefile)
 ```
+
+### Merge Data
+
+Since we are using data from two separate Rds files `PersonData.Rds` and `HHData.Rds`, we combine these two datasets by using a left_join function on `hhid` which is a unique identifier for each household.
 
 ```{r warning=FALSE, message = FALSE}
 # Merge Data
@@ -91,6 +112,18 @@ summarized_data <- combine_data %>%
 
 ### Visualizing County Data on a Map
 
+The interactive plot below shows the average number of miles the person traveled on survey day, with yellowish color representing high values and purplish color representing low values by counties in California. By pointing at each of the country, we are able to observe the corresponding values for `avg_DriveAlone_Dist`,`avg_Driveothers_Dist`, `avg_Passenger_Dist`, `avg_Walk_Dist`, `avg_Bike_Dist`, with their representations shown below.
+
+`avg_DriveAlone_Dist`: average number of miles the person drove alone on survey day
+
+`avg_Driveothers_Dist`: average number of miles the person drove with others on survey day
+
+`avg_Passenger_Dist`: average number of miles the person rode in a car as a passenger on survey day
+
+`avg_Walk_Dist`: average number of trips the person made on by walking on survey day
+
+`avg_Bike_Dist`: average number of trips the person made by bike on survey day
+
 ```{r}
 shapefile_sum <- shapefile %>%
   left_join(summarized_data, by = "CTFIP")
@@ -110,12 +143,11 @@ mapview(shapefile_sum,
                                     "avg_Sum_Pmt")))
 ```
 
-
 ## Perform Geographically Weighted Regression
 
-### Convert shape file into spatial data 
+### Convert shape file into spatial data
 
-Convert the `county.shp` file into spatial data 
+Convert the `county.shp` file into spatial data.
 
 ```{r}
 coords <- st_coordinates(st_centroid(st_geometry(shapefile_sum)))
@@ -126,11 +158,19 @@ gwr_data <- shapefile_sum %>%
 
 gwr_data <- cbind(gwr_data, coords)
 
-gwr_formula <- avg_Sum_Pmt ~ avg_DriveAlone_Dist + avg_Driveothers_Dist + avg_Passenger_Dist + avg_Walk_Dist + avg_Bike_Dist
+
 
 # convert to spatial data
 coordinates(gwr_data) <- ~X + Y
 proj4string(gwr_data) <- CRS("+proj=longlat +datum=WGS84")
+```
+
+### Construct Regression formula:
+
+We use the `gwr_formula` function to construct our regression formula. We took `avg_Sum_Pmt` as the response variable which is the average number of miles the person traveled on survey day, and `avg_DriveAlone_Dist`,`avg_Driveothers_Dist`, `avg_Passenger_Dist`, `avg_Walk_Dist`, `avg_Bike_Dist` as predictors.
+
+```{r}
+gwr_formula <- avg_Sum_Pmt ~ avg_DriveAlone_Dist + avg_Driveothers_Dist + avg_Passenger_Dist + avg_Walk_Dist + avg_Bike_Dist
 ```
 
 ### Select GWR Bandwidth
@@ -143,9 +183,12 @@ bw <- bw.gwr(
   formula = gwr_formula,
   data = gwr_data,  
   adaptive = T)
+bw
 ```
 
-## Results 
+In our analysis, we determined the optimal bandwidth here, which is 35.
+
+## Results
 
 Here is a summary of the geographically weighted regression model fit:
 
@@ -164,6 +207,10 @@ gwr_sf <- st_as_sf(gwr_result)
 
 ### Plot the coefficients
 
+#### Driving Alone
+
+Around 38°N, 123°W which is the Bay Area, the higher coefficients indicate that the average drive-alone distance contributes more significantly to changes in total traveling distance.
+
 ```{r}
 ggplot(data = gwr_sf) +
   geom_sf(aes(color = avg_DriveAlone_Dist)) + 
@@ -173,6 +220,10 @@ ggplot(data = gwr_sf) +
   labs(title = "Spatial Variation of avg_DriveAlone_Dist Coefficient", 
        color = "Coefficient Value")
 ```
+
+#### Driving with Others
+
+Coefficients are higher in southern and northern regions (green regions), while some coastal areas near 38°N have lower coefficients (dark blue), which suggest a converse relationship to the drive-alone distance.
 
 ```{r}
 ggplot(data = gwr_sf) +
@@ -184,6 +235,10 @@ ggplot(data = gwr_sf) +
        color = "Coefficient Value")
 ```
 
+#### Riding as Passanger
+
+The coefficients are generally low (mostly dark blue) across all regions, particularly in southern areas, suggesting that passenger distance is less influential.
+
 ```{r}
 ggplot(data = gwr_sf) +
   geom_sf(aes(color = avg_Passenger_Dist)) +  
@@ -193,6 +248,10 @@ ggplot(data = gwr_sf) +
   labs(title = "Spatial Variation of avg_Passenger_Dist Coefficient", 
        color = "Coefficient Value")
 ```
+
+#### Walking
+
+Coastal areas (especially below 38°N) have significantly higher coefficients (yellow to green), suggesting that walking distance contributes more significantly to changes in total traveling distance.
 
 ```{r}
 ggplot(data = gwr_sf) +
@@ -204,6 +263,10 @@ ggplot(data = gwr_sf) +
        color = "Coefficient Value")
 ```
 
+#### Biking
+
+Coefficients are lower in southern regions (dark purple regions), suggesting that bike distance is less influential.
+
 ```{r}
 ggplot(data = gwr_sf) +
   geom_sf(aes(color = avg_Bike_Dist)) +  
@@ -213,28 +276,6 @@ ggplot(data = gwr_sf) +
   labs(title = "Spatial Variation of avg_Bike_Dist Coefficient", 
        color = "Coefficient Value")
 ```
-
-### Interprotation of the Coefficients
-
-#### Walking
-
-Coastal areas (especially below 38°N) have significantly higher coefficients (yellow to green), suggesting that walking distance contributes more significantly to changes in total traveling distance.
-
-#### Driving Alone
-
-Around 38°N, 123°W which is the Bay Area, the higher coefficients indicate that the average drive-alone distance contributes more significantly to changes in total traveling distance.
-
-#### Driving with Others
-
-Coefficients are higher in southern and northern regions (green regions), while some coastal areas near 38°N have lower coefficients (dark blue), which suggest a converse relationship to the drive-alone distance.
-
-#### Riding as Passanger
-
-The coefficients are generally low (mostly dark blue) across all regions, particularly in southern areas, suggesting that passenger distance is less influential.
-
-#### Biking
-
-Coefficients are lower in southern regions (dark purple regions), suggesting that bike distance is less influential.
 
 #### Summary
 
