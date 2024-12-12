@@ -31,9 +31,9 @@ In GWR, the regression is performed repeatedly for each location in the dataset,
 
 #### Bandwidth Selection:
 
-The selection of an appropriate bandwidth is a crucial step for GWR model. Bandwidth is a parameter that governs the spatial extent, over which neighboring observations influence the estimation of local parameters. The bandwidth serves as a key filter determining the degree of localization in the analysis. 
+The selection of an appropriate bandwidth is a crucial step for GWR model. Bandwidth is a parameter that governs the spatial extent, over which neighboring observations influence the estimation of local parameters. The bandwidth serves as a key filter determining the degree of localization in the analysis.
 
-A bandwidth that is too narrow may lead to oversensitivity to local variations, potentially capturing noise in the data. On the other hand, too broad bandwidths can result in over smoothed representations , masking subtle spatial patterns. With a proper bandwidth value, we are able to achieve the balance to ensure the GWR model accurately captures the true spatial heterogeneity without being unduly influenced by distant observations. 
+A bandwidth that is too narrow may lead to oversensitivity to local variations, potentially capturing noise in the data. On the other hand, too broad bandwidths can result in over smoothed representations , masking subtle spatial patterns. With a proper bandwidth value, we are able to achieve the balance to ensure the GWR model accurately captures the true spatial heterogeneity without being unduly influenced by distant observations.
 
 Adaptive bandwidths offer an effective solution, as they can vary based on the size of each geographical area and that of its neighbors. Thus, the model can select a narrower bandwidth in dense areas, and a larger one for suburban areas. [3]
 
@@ -45,7 +45,9 @@ In our analysis, we determined the optimal bandwidth using the \`**bw.gwr\`** fu
 
 ## Data Pre-Processing
 
-```{r}
+### Merging data
+
+```{r echo=TRUE, include=FALSE}
 library(sf) 
 library(sp)
 library(dplyr)
@@ -66,7 +68,7 @@ head(bg_density)
 head(shapefile)
 ```
 
-```{r}
+```{r echo=TRUE, include=FALSE}
 # Merge Data
 combine_data <- left_join(person_data, hh_data) %>% left_join(bg_density)
 head(combine_data)
@@ -74,7 +76,7 @@ head(combine_data)
 
 Group the data by county (CTFIP), and calculates the average total number of miles traveled by a person for each travel mode (Drive Alone, Drive with Others, Passenger, Walk, and Total) on the survey day.
 
-```{r}
+```{r echo=TRUE, include=FALSE}
 summarized_data <- combine_data %>%
   select(hhid, pnum, DriveAlone_Dist, Driveothers_Dist, Passenger_Dist, Walk_Dist, Bike_Dist, CTFIP, Sum_PMT) %>%
   group_by(CTFIP) %>%
@@ -87,7 +89,7 @@ summarized_data <- combine_data %>%
     avg_Sum_Pmt = mean(Sum_PMT, na.rm = T))
 ```
 
-Plot
+### Visualizing County Data on a Map
 
 ```{r}
 shapefile_sum <- shapefile %>%
@@ -108,7 +110,10 @@ mapview(shapefile_sum,
                                     "avg_Sum_Pmt")))
 ```
 
-#### Select GWR Bandwidth
+
+## Perform Geographically Weighted Regression
+
+### Select GWR Bandwidth
 
 Use `bw.gwr()` to find the optimal bandwidth for GWR analysis.
 
@@ -134,7 +139,7 @@ bw <- bw.gwr(
   adaptive = T)
 ```
 
-#### Perform Geographically Weighted Regression
+## Results 
 
 ```{r}
 gwr_model <- gwr.basic(
@@ -200,4 +205,36 @@ ggplot(data = gwr_sf) +
        color = "Coefficient Value")
 ```
 
-interpret coefficient xxxx
+## Interprotation of the Coefficients
+
+### Walking
+
+Coastal areas (especially below 38°N) have significantly higher coefficients (yellow to green), suggesting that walking distance contributes more significantly to changes in total traveling distance.
+
+### Driving Alone
+
+Around 38°N, 123°W which is the Bay Area, the higher coefficients indicate that the average drive-alone distance contributes more significantly to changes in total traveling distance.
+
+### Driving with Others
+
+Coefficients are higher in southern and northern regions (green regions), while some coastal areas near 38°N have lower coefficients (dark blue), which suggest a converse relationship to the drive-alone distance.
+
+### Riding as Passanger
+
+The coefficients are generally low (mostly dark blue) across all regions, particularly in southern areas, suggesting that passenger distance is less influential.
+
+### Biking
+
+Coefficients are lower in southern regions (dark purple regions), suggesting that bike distance is less influential.
+
+### Summary
+
+**Driving Alone**: Higher influence in the northern regions.
+
+**Driving with Others**: Higher influence in central and southern regions.
+
+**Walking**: Stronger impacts in coastal regions.
+
+**Cycling**: Stronger impacts in northern and central regions.
+
+**Passenger**: Riding as a passenger is relatively consistent across regions.
