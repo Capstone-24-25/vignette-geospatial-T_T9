@@ -2,7 +2,14 @@
 
 # Contributors
 
-Sophie Shi, Jiahui He, Xiaofeng Cai, Jiajia Feng, Liuqian Bao
+This project is a collaborative effort by:
+- Sophie Shi
+- Jiahui He
+- Xiaofeng Cai
+- Jiajia Feng
+- Liuqian Bao
+
+*Conducted as part of the Fall 2024 PSTAT197A course at UCSB.*
 
 # Vignette abstract
 
