@@ -11,23 +11,37 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Spatial Analysis of Travel Distances Across Different Modes Using Geographically Weighted Regression (GWR)
 
-## Goal 
-The goal is to understand how travel behavior (e.g., distances traveled for different modes of transportation) varies across different counties through a spatial regression analysis. 
+## Goal
+
+The goal is to understand how travel behavior (e.g., distances traveled for different modes of transportation) varies across different counties through a spatial regression analysis.
 
 ## Data Sources
-This vignette uses a database of 26,095 sample households residing in California, containing detailed information on their travel behavior on one assigned day for each household, from April 19, 2016 through April 25, 2017, provided by the Transportation Secure Data Center (TSDC). [1]
-Specifically, we obtained travel mode data from `PersonData.Rds`, `HHData.Rds`and geographical data, i.e. the physical location and shape of each county, from`counties.shp`, files given in the dataset.
+
+This vignette uses a database of 26,095 sample households residing in California, containing detailed information on their travel behavior on one assigned day for each household, from April 19, 2016 through April 25, 2017, provided by the Transportation Secure Data Center (TSDC). [1] Specifically, we obtained travel mode data from `PersonData.Rds`, `HHData.Rds`and geographical data, i.e. the physical location and shape of each county, from`counties.shp`, files given in the dataset.
 
 [1]"Transportation Secure Data Center." (2019). National Renewable Energy Laboratory. Accessed Jan. 15, 2019: www.nrel.gov/tsdc.
 
 ## Methodology
-### Geographically Weighted Regression (GWR): 
+
+### Geographically Weighted Regression (GWR):
 
 Geographically Weighted Regression (GWR) is a spatial analysis technique that extends traditional regression by allowing the relationships between dependent and independent variables to vary spatially. Unlike ordinary least squares (OLS) regression, which assumes global stationarity of the coefficients, GWR incorporates geographic context into the model. This approach accounts for spatial heterogeneity, a common characteristic in spatial datasets, where relationships can change over space due to localized factors.
 
-In GWR, the regression is performed repeatedly for each location in the dataset, weighting observations according to their spatial proximity to the focal location. The weighting is determined using a kernel function, which can be fixed or adaptive, depending on the data's spatial distribution.[2] 
+In GWR, the regression is performed repeatedly for each location in the dataset, weighting observations according to their spatial proximity to the focal location. The weighting is determined using a kernel function, which can be fixed or adaptive, depending on the data's spatial distribution.[2]
+
+#### Bandwidth Selection:
+
+The selection of an appropriate bandwidth is a crucial step for GWR model. Bandwidth is a parameter that governs the spatial extent, over which neighboring observations influence the estimation of local parameters. The bandwidth serves as a key filter determining the degree of localization in the analysis. 
+
+A bandwidth that is too narrow may lead to oversensitivity to local variations, potentially capturing noise in the data. On the other hand, too broad bandwidths can result in over smoothed representations , masking subtle spatial patterns. With a proper bandwidth value, we are able to achieve the balance to ensure the GWR model accurately captures the true spatial heterogeneity without being unduly influenced by distant observations. 
+
+Adaptive bandwidths offer an effective solution, as they can vary based on the size of each geographical area and that of its neighbors. Thus, the model can select a narrower bandwidth in dense areas, and a larger one for suburban areas. [3]
+
+In our analysis, we determined the optimal bandwidth using the \`**bw.gwr\`** function, which is 35.
 
 [2] Charlton, M., & Fotheringham, A. S. (2009). Geographically weighted regression. [White Paper].
+
+[3] Kiani et al.(2024, February 29). *Mastering geographically weighted regression: Key considerations for building a robust model: Geospatial Health*. Mastering geographically weighted regression: key considerations for building a robust model \| Geospatial Health. <https://www.geospatialhealth.net/gh/article/view/1271/1365>
 
 ## Data Pre-Processing
 
@@ -52,15 +66,14 @@ head(bg_density)
 head(shapefile)
 ```
 
-
 ```{r}
 # Merge Data
 combine_data <- left_join(person_data, hh_data) %>% left_join(bg_density)
 head(combine_data)
 ```
 
-
 Group the data by county (CTFIP), and calculates the average total number of miles traveled by a person for each travel mode (Drive Alone, Drive with Others, Passenger, Walk, and Total) on the survey day.
+
 ```{r}
 summarized_data <- combine_data %>%
   select(hhid, pnum, DriveAlone_Dist, Driveothers_Dist, Passenger_Dist, Walk_Dist, Bike_Dist, CTFIP, Sum_PMT) %>%
@@ -74,8 +87,8 @@ summarized_data <- combine_data %>%
     avg_Sum_Pmt = mean(Sum_PMT, na.rm = T))
 ```
 
-
 Plot
+
 ```{r}
 shapefile_sum <- shapefile %>%
   left_join(summarized_data, by = "CTFIP")
@@ -95,8 +108,8 @@ mapview(shapefile_sum,
                                     "avg_Sum_Pmt")))
 ```
 
-
 #### Select GWR Bandwidth
+
 Use `bw.gwr()` to find the optimal bandwidth for GWR analysis.
 
 ```{r}
