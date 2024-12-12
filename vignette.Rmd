@@ -235,7 +235,7 @@ ggplot(data = gwr_sf) +
        color = "Coefficient Value")
 ```
 
-#### Riding as Passanger
+#### Riding as Passenger
 
 The coefficients are generally low (mostly dark blue) across all regions, particularly in southern areas, suggesting that passenger distance is less influential.
 
