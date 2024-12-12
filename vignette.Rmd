@@ -15,7 +15,10 @@ knitr::opts_chunk$set(echo = TRUE)
 The goal is to understand how travel behavior (e.g., distances traveled for different modes of transportation) varies across different counties through a spatial regression analysis 
 
 ## Data Sources
-xxx
+This vignette uses a database of 26,095 sample households residing in California, containing detailed information on their travel behavior on one assigned day for each household, from April 19, 2016 through April 25, 2017, provided by the Transportation Secure Data Center (TSDC). [1]
+Specifically, we obtained travel mode data from `PersonData.Rds`, `HHData.Rds`and geographical data, i.e. the physical location and shape of each county, from`counties.shp`, files given in the dataset.
+
+[1]"Transportation Secure Data Center." (2019). National Renewable Energy Laboratory. Accessed Jan. 15, 2019: www.nrel.gov/tsdc.
 
 ## Methodology
 Spatial Regression Analysis:
