@@ -46,7 +46,16 @@ This project serves as both a tutorial and a research case study, with the follo
 ## Repository Structure
 
 - **`Data/`**: Contains raw and cleaned datasets.
+  - **`ca_state_boundaries/`**: Spatial data for California state boundaries.
+  - **`counties/`**: Spatial data for California counties.
+  - **`HHData.*`**: Household travel data in both `.csv` and `.Rds` formats.
+  - **`PersonData.*`**: Individual-level travel data in both `.csv` and `.Rds` formats.
+  - **`hh_bgDensity.*`**: Block group density data in both `.csv` and `.Rds` formats.
+    
 - **`script/`**: Includes R scripts for GWR analysis, data preprocessing, and visualization.
+  - `draft_script.Rmd`: A draft file for initial code and analysis.
+  - `script_code_only.R`: The final R script for core analysis.
+
 - **`vignette/`**: Documentation files including `.Rmd` and rendered `.html` for project insights and tutorials.
 - **Root Files**:
   - `.gitignore`: Specifies files to be ignored by Git.
