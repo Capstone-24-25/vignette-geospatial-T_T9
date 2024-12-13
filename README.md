@@ -57,9 +57,10 @@ This project serves as both a tutorial and a research case study, with the follo
   - `script_code_only.R`: The final R script for core analysis.
 
 - **`vignette/`**: Documentation files including `.Rmd` and rendered `.html` for project insights and tutorials.
+  
 - **Root Files**:
-  - `.gitignore`: Specifies files to be ignored by Git.
   - `README.md`: Project overview and instructions.
+  - `.gitignore`: Specifies files to be ignored by Git.
   - `.Rproj`: R project configuration file for easy environment setup.
 
 ---
