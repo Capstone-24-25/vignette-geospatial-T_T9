@@ -45,9 +45,13 @@ This project serves as both a tutorial and a research case study, with the follo
 
 ## Repository Structure
 
-- **`data/`**: Contains raw and processed datasets.  
-- **`script/`**: Includes R scripts for GWR analysis, data preprocessing, and visualization.  
-- **`img/`**: Stores generated plots, maps, and other visual outputs.  
+- **`Data/`**: Contains raw and cleaned datasets.
+- **`script/`**: Includes R scripts for GWR analysis, data preprocessing, and visualization.
+- **`vignette/`**: Documentation files including `.Rmd` and rendered `.html` for project insights and tutorials.
+- **Root Files**:
+  - `.gitignore`: Specifies files to be ignored by Git.
+  - `README.md`: Project overview and instructions.
+  - `.Rproj`: R project configuration file for easy environment setup.
 
 ---
 
